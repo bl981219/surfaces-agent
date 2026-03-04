@@ -1,99 +1,85 @@
 # surfaces-agent
 
-An agentic AI assistant designed for computational materials scientists to automate surface chemistry workflows. `surfaces-agent` interprets natural language prompts to download bulk structures from the Materials Project, fetch literature, generate selective-dynamics slabs, and execute Machine Learning Interatomic Potential (MLIAP) relaxations using CHGNet.
+Autonomous agentic AI engine for computational surface science and electrochemistry. This package uses a Tool-First Architecture to safely route high-level natural language queries into strict, deterministic Python execution modules.
+
+## Features
+
+* **Deterministic Orchestration:** Uses a strict tool registry (via Pydantic) to prevent physical hallucinations.
+* **Stateful Execution:** Utilizes an in-memory blackboard (`state.py`) to pass complex objects (e.g., `ase.Atoms`, Pymatgen structures) between tools without exposing raw data to the LLM.
+* **Surface Science Toolkit:** Built-in modules for Materials Project queries, slab generation, and adsorbate placement.
+* **CLI Suite:** All tools can be run autonomously via the agent or manually via unified `surfaces-*` terminal commands.
 
 ---
 
-## 🛠️ Available Tools
+## Installation
 
-The LLM agent is equipped with the following Python-based tools:
-
-### `fetch_bulk_structure`
-Queries the Materials Project database to download the most stable bulk CIF for a given formula. If multiple polymorphs exist, it pauses to ask the user for space group clarification.
-
-### `retrieve_surface_literature`
-Queries for stable surfaces, vacancy formation characteristics, and viable reactions for a given bulk material.
-
-### `generate_slab_with_dynamics`
-Uses Pymatgen to:
-- Slice a bulk CIF into a specified Miller index slab  
-- Apply vacuum spacing  
-- Set selective dynamics (fixing the bottom half of the slab)
-
-### `relax_and_calculate_surface_energy`
-Utilizes CHGNet (via PyTorch/CUDA) to:
-- Relax the generated slab  
-- Compute the absolute surface energy (J/m²)
-
----
-
-## 💻 Installation
-
-This package requires a GPU-enabled environment to run CHGNet efficiently.
-
-### 1️⃣ Set Up the Conda Environment
 ```bash
-module load anaconda3
-conda create -n surfaces-agent_bill python=3.10 -y
-conda activate surfaces-agent_bill
+pip install .
 ```
 
-### 2️⃣ Install PyTorch with CUDA Support
-*Note: Verify your node's available CUDA version using `module avail cuda` or `nvidia-smi`.* The example below uses CUDA 11.8.
-```bash
-conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia -y
-```
+Ensure your `.pmgrc.yaml` is configured with your Materials Project API key, or export it directly:
 
-### 3️⃣ Install the Package
-Clone the repository and install in editable mode. This links the `surfaces-agent` CLI command to your terminal path.
 ```bash
-git clone [https://github.com/bl981219/surfaces-agent.git](https://github.com/bl981219/surfaces-agent.git)
-cd surfaces-agent
-pip install -e .
+export MAPI_KEY="your_materials_project_key"
+export GOOGLE_API_KEY="your_gemini_api_key"
 ```
 
 ---
 
-## 🚀 Usage
+## Project Structure
 
-The package exposes a single command-line interface with a dynamic `--llm` backend selection.
+This suite implements a professional Python packaging structure. It uses a hyphenated prefix for all command-line tools to prevent namespace collisions. Every tool acts as both an LLM-callable function and a standalone CLI script equipped with a zero-argument `def main():` wrapper.
 
-Before running, export your required API keys:
+* `surfaces-agent`: The primary interactive AI reasoning loop.
+* `surfaces-slab`: Utility for generating Miller-indexed slabs from bulk structures.
+* `surfaces-mp`: Database query tool for retrieving bulk structures.
+* `surfaces-pourbaix`: Tool for generating Pourbaix diagrams.
+
+---
+
+## Usage Examples
+
+### 1. Autonomous Agent Execution
+Launch the main engine to handle multi-step workflows. The agent will read the prompt, select the appropriate tools, manage the state string references, and provide the final output.
+
 ```bash
-# Required for fetching structures
-export MP_API_KEY="your-materials-project-key"
-
-# Required if using --llm gemini (Default)
-export GOOGLE_API_KEY="your-gemini-key"
-
-# Required if using --llm openai
-export OPENAI_API_KEY="sk-your-openai-key"
+surfaces-agent --prompt "Fetch the bulk structure of SrTiO3 from Materials Project. Create a (001) surface slab, and place an O* intermediate at the bridge site. Analyze the role of different oxygen intermediates and how electronic properties of doped SrTiO3 change." --model gemini-1.5-pro --temperature 0.0
 ```
 
-### Example Run
+### 2. Manual Tool Execution
+Bypass the LLM and run the deterministic scientific modules directly using standard `argparse` flags.
+
 ```bash
-surfaces-agent --llm gemini --prompt "I want to study SrTiO3. Get the bulk structure from the Materials Project, find the stable surface in the literature, generate a symmetric slab for that facet with 15 Angstroms vacuum, and relax it to find the surface energy."
+# Query the database
+surfaces-mp --formula SrTiO3
+
+# Generate a surface slab from a local file
+surfaces-slab --formula SrTiO3 --miller 0 0 1 --vacuum 15.0
 ```
 
 ---
 
-## 🔄 Expected Execution Flow
+## Architecture & Development
 
-1. **Agent identifies the material and calls:**
-   `fetch_bulk_structure(formula="SrTiO3")`
-   *(If multiple polymorphs exist, the agent asks you which space group to use before proceeding.)*
-2. **Agent checks literature for the stable facet:**
-   `retrieve_surface_literature(material="SrTiO3")`
-3. **Agent generates the slab based on findings:**
-   ```python
-   generate_slab_with_dynamics(
-       cif_path="SrTiO3_Pm-3m_mp-5229.cif",
-       miller_index="100",
-       layers=4,
-       vacuum=15.0,
-       symmetric=True
-   )
-   ```
-4. **Agent relaxes the slab and computes surface energy:**
-   `relax_and_calculate_surface_energy(...)`
-5. **Agent returns a synthesized natural language report to the terminal.**
+### The Execution State (`state.py`)
+Because LLMs cannot reliably handle large numerical arrays or complex Python classes, `surfaces-agent` uses an `ExecutionState` object. 
+
+1. Tool A (e.g., `surfaces-mp`) fetches a structure and saves it to the state.
+2. Tool A returns a string reference (e.g., `bulk_struct_8f3a2b`) to the LLM.
+3. The LLM passes `bulk_struct_8f3a2b` as an argument to Tool B (e.g., `surfaces-slab`).
+4. Tool B loads the heavy object from the state using the reference string.
+
+### Adding New Tools
+1. Create a new module in `surfaces_agent/tools/`.
+2. Define a `pydantic.BaseModel` schema for the inputs.
+3. Implement the core logic, accepting the `ExecutionState` if passing complex objects.
+4. Wrap the execution in a zero-argument `def main():` block with `argparse`.
+5. Register the command in `pyproject.toml`.
+
+```toml
+[project.scripts]
+surfaces-agent = "surfaces_agent.agent.engine:main"
+surfaces-slab = "surfaces_agent.tools.slab:main"
+surfaces-mp = "surfaces_agent.tools.mp:main"
+surfaces-pourbaix = "surfaces_agent.tools.pourbaix:main"
+```
