@@ -1,8 +1,8 @@
 import argparse
 import os
 import sys
-from langchain.agents import create_tool_calling_agent, AgentExecutor
-from langchain_core.prompts import ChatPromptTemplate
+from langchain.agents import create_tool_calling_agent
+from langchain.agents.agent_executor import AgentExecutor
 from surfaces_agent.tools import (
     retrieve_surface_literature, 
     fetch_bulk_structure,
