@@ -15,7 +15,8 @@ dependencies = [
     "pymatgen>=2023.10",
     "google-genai",
     "openai",
-    "python-dotenv"
+    "python-dotenv",
+    "chgnet"
 ]
 
 [project.scripts]
