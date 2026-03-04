@@ -14,7 +14,8 @@ dependencies = [
     "ase>=3.22",
     "pymatgen>=2023.10",
     "google-genai",
-    "openai"
+    "openai",
+    "python-dotenv"
 ]
 
 [project.scripts]
