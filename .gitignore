@@ -8,5 +8,5 @@ build/
 
 # Generated data files and CHGNet outputs
 *.cif
-chgnet_output/
+*output/
 .env
