@@ -24,9 +24,22 @@ class GeminiClient:
             tools=[types.Tool(function_declarations=function_declarations)]
         )
         
+        full_prompt = prompt
+        if history:
+            transcript = "=== CONVERSATION HISTORY ===\n"
+            for entry in history:
+                if "role" in entry:
+                    transcript += f"{entry['role'].upper()}: {entry['content']}\n"
+                elif "tool" in entry:
+                    transcript += f"TOOL ({entry['tool']}) OUTPUT: {entry['output']}\n"
+            transcript += "============================\n\n"
+            transcript += f"CURRENT REQUEST / NEXT STEP:\n{prompt}"
+            full_prompt = transcript
+        # ---------------------------------------------------
+        
         response = self.client.models.generate_content(
             model=self.model_name,
-            contents=prompt,
+            contents=full_prompt,
             config=config
         )
 
