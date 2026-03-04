@@ -2,30 +2,41 @@
 import argparse
 import sys
 from surfaces_agent.agent.registry import ToolRegistry
+from surfaces_agent.agent.state import ExecutionState
 from surfaces_agent.llm.client import GeminiClient
 
-# Import your scientific tools (assuming they exist in the tools directory)
-# from surfaces_agent.tools.slab import SlabParameters, generate_slab
+# Import your scientific tools and schemas
+from surfaces_agent.tools.mp import MPQuerySchema, fetch_bulk_structure
 
-def build_registry() -> ToolRegistry:
-    registry = ToolRegistry()
-    # Example registration (uncomment when slab.py is fully implemented):
-    # registry.register(
-    #     name="generate_slab",
-    #     description="Generates a surface slab from a bulk formula and Miller indices.",
-    #     schema=SlabParameters,
-    #     func=generate_slab
-    # )
+def build_registry(state: ExecutionState) -> ToolRegistry:
+    registry = ToolRegistry(state)
+    
+    # Register the Materials Project Tool
+    registry.register(
+        name="fetch_bulk_structure",
+        description="Fetches the lowest energy bulk structure for a given chemical formula from the Materials Project database.",
+        schema=MPQuerySchema,
+        func=fetch_bulk_structure
+    )
+    
+    # Future tools will go here:
+    # registry.register(name="generate_slab", ...)
+    
     return registry
 
 def run_agent_loop(prompt: str, model: str, temperature: float, max_steps: int = 5):
     """The core ReAct (Reason + Act) orchestration loop."""
-    registry = build_registry()
+    
+    # 1. Initialize the shared state blackboard
+    state = ExecutionState()
+    
+    # 2. Build the registry with the shared state
+    registry = build_registry(state)
     llm_tools = registry.get_llm_tools()
     client = GeminiClient(model_name=model, temperature=temperature)
     
     current_prompt = prompt
-    history = [] # Tracks the context of tool outputs
+    history = [] 
     
     print(f"🤖 Starting surfaces-agent loop for task:\n'{prompt}'\n")
 
@@ -49,7 +60,7 @@ def run_agent_loop(prompt: str, model: str, temperature: float, max_steps: int =
             print(f"📊 Tool Output: {observation}")
             
             # Feed the observation back into the prompt for the next loop iteration
-            current_prompt = f"Observation from {tool_name}: {observation}\nWhat is the next step?"
+            current_prompt = f"Observation from {tool_name}: {observation}\nWhat is the next step? If the task is complete, summarize the results."
             history.append({"tool": tool_name, "output": observation})
 
     print("\n⚠️ Agent reached maximum steps without a final answer.")
@@ -60,11 +71,12 @@ def main():
         "--prompt", 
         type=str, 
         required=True, 
-        help="The scientific query (e.g., 'Analyze the O* intermediate adsorption on a doped SrTiO3 (001) surface.')"
+        help="The scientific query (e.g., 'Fetch the bulk structure of SrTiO3 from Materials Project.')"
     )
-    parser.add_argument("--model", type=str, default="gemini-2.5-pro", help="LLM provider model string")
-    parser.add_argument("--temperature", type=float, default=0.0, help="Temperature (0.0 recommended for orchestration)")
-    parser.add_argument("--max-steps", type=int, default=5, help="Maximum number of tool-calling iterations")
+    # Defaulting to flash to save your API quota
+    parser.add_argument("--model", type=str, default="gemini-2.5-flash", help="LLM provider model string")
+    parser.add_argument("--temperature", type=float, default=0.0, help="Temperature")
+    parser.add_argument("--max-steps", type=int, default=5, help="Maximum number of iterations")
     
     args = parser.parse_args()
     
