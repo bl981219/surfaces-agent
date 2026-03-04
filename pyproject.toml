@@ -7,7 +7,7 @@ name = "surfaces-agent"
 version = "0.2.0"
 description = "Agentic AI assistant for surface chemistry, generating slabs, and running MLIAP relaxations."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "langchain",
     "langchain-openai",
