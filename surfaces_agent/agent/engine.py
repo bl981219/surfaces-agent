@@ -4,6 +4,8 @@ import sys
 from surfaces_agent.agent.registry import ToolRegistry
 from surfaces_agent.agent.state import ExecutionState
 from surfaces_agent.llm.client import GeminiClient
+from surfaces_agent.tools.mp import MPQuerySchema, fetch_bulk_structure
+from surfaces_agent.tools.io import SaveStructureSchema, save_structure
 
 # Import your scientific tools and schemas
 from surfaces_agent.tools.mp import MPQuerySchema, fetch_bulk_structure
@@ -19,67 +21,100 @@ def build_registry(state: ExecutionState) -> ToolRegistry:
         func=fetch_bulk_structure
     )
     
+    registry.register(
+        name="save_structure",
+        description="Saves a structure from the execution state to a local file. Only use this if the user explicitly asks to save or export a file.",
+        schema=SaveStructureSchema,
+        func=save_structure
+    )
+
     # Future tools will go here:
     # registry.register(name="generate_slab", ...)
     
     return registry
 
-def run_agent_loop(prompt: str, model: str, temperature: float, max_steps: int = 5):
-    """The core ReAct (Reason + Act) orchestration loop."""
-    
-    # 1. Initialize the shared state blackboard
+def run_agent_loop(initial_prompt: str, model: str, temperature: float, max_steps: int = 5):
+    """The core ReAct orchestration loop with interactive shell support."""
     state = ExecutionState()
-    
-    # 2. Build the registry with the shared state
     registry = build_registry(state)
     llm_tools = registry.get_llm_tools()
     client = GeminiClient(model_name=model, temperature=temperature)
     
-    current_prompt = prompt
+    # This history array now persists for the entire session
     history = [] 
     
-    print(f"🤖 Starting surfaces-agent loop for task:\n'{prompt}'\n")
+    # Strong system instruction to prevent lazy stopping
+    system_instruction = (
+        "You are an autonomous scientific orchestrator. "
+        "You must execute ALL steps requested by the user before returning a final answer. "
+        "Do not stop halfway to ask for permission if the user has already given you a multi-step command."
+    )
+    
+    print("🤖 surfaces-agent interactive shell initialized. Type 'exit' to quit.\n")
+    
+    current_prompt = f"{system_instruction}\n\nUser Request: {initial_prompt}" if initial_prompt else None
 
-    for step in range(max_steps):
-        print(f"--- Step {step + 1} ---")
-        response = client.generate_with_tools(current_prompt, llm_tools, history)
+    while True:
+        # If we don't have a prompt (e.g., starting empty or finished previous task), ask the user
+        if not current_prompt:
+            try:
+                user_input = input("\n>> ")
+                if user_input.lower() in ['exit', 'quit']:
+                    print("Exiting surfaces-agent. State cleared.")
+                    break
+                current_prompt = user_input
+            except (KeyboardInterrupt, EOFError):
+                print("\nExiting surfaces-agent. State cleared.")
+                break
+
+        print(f"\n🤖 Processing...")
         
-        if response["action"] == "reply":
-            print("\n✅ Final Answer:")
-            print(response["text"])
-            return
-
-        elif response["action"] == "call_tool":
-            tool_name = response["tool_name"]
-            tool_args = response["tool_args"]
-            print(f"🔧 LLM routing to tool: {tool_name}")
-            print(f"   Parameters: {tool_args}")
+        # Tool execution loop for the current prompt
+        for step in range(max_steps):
+            response = client.generate_with_tools(current_prompt, llm_tools, history)
             
-            # Execute the deterministic physics code
-            observation = registry.execute(tool_name, tool_args)
-            print(f"📊 Tool Output: {observation}")
-            
-            # Feed the observation back into the prompt for the next loop iteration
-            current_prompt = f"Observation from {tool_name}: {observation}\nWhat is the next step? If the task is complete, summarize the results."
-            history.append({"tool": tool_name, "output": observation})
+            if response["action"] == "reply":
+                print(f"✅ Final Answer:\n{response['text']}")
+                # Add the final interaction to history so it remembers the context
+                history.append({"role": "user", "content": current_prompt})
+                history.append({"role": "assistant", "content": response['text']})
+                
+                # Clear current prompt to wait for next user input
+                current_prompt = None 
+                break
 
-    print("\n⚠️ Agent reached maximum steps without a final answer.")
+            elif response["action"] == "call_tool":
+                tool_name = response["tool_name"]
+                tool_args = response["tool_args"]
+                print(f"   🔧 Routing to tool: {tool_name} | Args: {tool_args}")
+                
+                observation = registry.execute(tool_name, tool_args)
+                print(f"   📊 Tool Output: {observation}")
+                
+                current_prompt = (
+                    f"Observation from {tool_name}: {observation}\n"
+                    f"Evaluate if the original user request is fully complete. "
+                    f"If there are remaining steps, execute the next tool. "
+                    f"If complete, summarize the results."
+                )
+                # Keep track of tool usage in history so the LLM remembers what it did
+                history.append({"tool": tool_name, "output": observation})
+                
+        if current_prompt is not None:
+             print("\n⚠️ Agent reached maximum steps without a final answer. Returning to prompt.")
+             current_prompt = None
 
 def main():
-    parser = argparse.ArgumentParser(description="Run the surfaces-agent orchestrator loop.")
-    parser.add_argument(
-        "--prompt", 
-        type=str, 
-        required=True, 
-        help="The scientific query (e.g., 'Fetch the bulk structure of SrTiO3 from Materials Project.')"
-    )
-    # Defaulting to flash to save your API quota
+    parser = argparse.ArgumentParser(description="Run the surfaces-agent orchestrator.")
+    # Make prompt optional so we can boot directly into the shell
+    parser.add_argument("--prompt", type=str, default=None, help="Initial scientific query")
     parser.add_argument("--model", type=str, default="gemini-2.5-flash", help="LLM provider model string")
     parser.add_argument("--temperature", type=float, default=0.0, help="Temperature")
-    parser.add_argument("--max-steps", type=int, default=5, help="Maximum number of iterations")
+    parser.add_argument("--max-steps", type=int, default=10, help="Maximum number of iterations per query")
     
     args = parser.parse_args()
     
+    import sys
     try:
         run_agent_loop(args.prompt, args.model, args.temperature, args.max_steps)
     except Exception as e:
