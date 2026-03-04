@@ -102,4 +102,7 @@ surfaces-md --input POSCAR_supercell --temp 873 --steps 5000 --field -0.01 --mol
 ---
 
 ## License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Author: **Mengren Bill Liu**
 Developed for the Computational Materials Science community. For bugs or feature requests, please open an issue.
