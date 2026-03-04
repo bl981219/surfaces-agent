@@ -4,7 +4,7 @@ import sys
 from pydantic import BaseModel, Field
 from pymatgen.ext.matproj import MPRester
 from surfaces_agent.agent.state import ExecutionState
-from dotenv import load_dotenv  # <-- 1. Import this
+from dotenv import load_dotenv
 
 _global_state = ExecutionState()
 
