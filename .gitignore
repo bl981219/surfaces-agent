@@ -9,4 +9,5 @@ build/
 # Generated data files and CHGNet outputs
 *.cif
 chgnet_output/
+.env
 bill_API.txt
