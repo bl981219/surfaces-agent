@@ -4,12 +4,12 @@ from google.genai import types
 from dotenv import load_dotenv
 
 class GeminiClient:
-    def __init__(self, model_name: str = "gemini-2.5-flash-lite", temperature: float = 0.0):
+    def __init__(self, model_name: str = "gemini-3.1-flash-lite-preview", temperature: float = 0.0):
         load_dotenv()
-        api_key = os.environ.get("GOOGLE_API_KEY")
+        api_key = os.environ.get("API_KEY")
         
         if not api_key:
-            raise ValueError("GOOGLE_API_KEY environment variable or .env entry not set.")
+            raise ValueError("API_KEY environment variable or .env entry not set.")
             
         
         self.client = genai.Client(api_key=api_key)
