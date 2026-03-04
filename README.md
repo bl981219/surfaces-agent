@@ -17,7 +17,7 @@ Autonomous agentic AI engine for computational surface science and electrochemis
 pip install .
 ```
 
-Ensure your `.pmgrc.yaml` is configured with your Materials Project API key, or export it directly:
+Ensure your `.env` is configured with your Materials Project API key, or export it directly:
 
 ```bash
 export MAPI_KEY="your_materials_project_key"
@@ -43,7 +43,7 @@ This suite implements a professional Python packaging structure. It uses a hyphe
 Launch the main engine to handle multi-step workflows. The agent will read the prompt, select the appropriate tools, manage the state string references, and provide the final output.
 
 ```bash
-surfaces-agent --prompt "Fetch the bulk structure of SrTiO3 from Materials Project. Create a (001) surface slab, and place an O* intermediate at the bridge site. Analyze the role of different oxygen intermediates and how electronic properties of doped SrTiO3 change." --model gemini-1.5-pro --temperature 0.0
+surfaces-agent --prompt "Fetch the bulk structure of SrTiO3 from Materials Project. Create a (001) surface slab, relax it with CHGNet, and place an O* intermediate at the bridge site. Analyze the role of different oxygen intermediates and how electronic properties of doped SrTiO3 change." --model gemini-1.5-pro --temperature 0.0
 ```
 
 ### 2. Manual Tool Execution
