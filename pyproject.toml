@@ -14,7 +14,7 @@ dependencies = [
     "ase>=3.22",
     "pymatgen>=2023.10",
     "google-genai",
-    "openai","
+    "openai",
     "mp-api",
     "python-dotenv",
     "chgnet"
@@ -26,6 +26,7 @@ surfaces-slab = "surfaces_agent.tools.slab:main"
 surfaces-mp = "surfaces_agent.tools.mp:main"
 surfaces-pourbaix = "surfaces_agent.tools.pourbaix:main"
 surfaces-save = "surfaces_agent.tools.io:main"
+surfaces-adsorb = "surfaces_agent.tools.adsorption:main"
 
 [tool.setuptools]
-packages = ["surfaces_agent"]
+packages = ["surfaces_agent", "surfaces_agent.agent", "surfaces_agent.tools"]
