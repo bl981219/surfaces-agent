@@ -17,7 +17,10 @@ dependencies = [
     "openai",
     "mp-api",
     "python-dotenv",
-    "chgnet"
+    "chgnet",
+    "matplotlib",
+    "numpy",
+    "scipy"
 ]
 
 [project.scripts]
@@ -28,6 +31,9 @@ surfaces-pourbaix = "surfaces_agent.tools.pourbaix:main"
 surfaces-save = "surfaces_agent.tools.io:main"
 surfaces-adsorb = "surfaces_agent.tools.adsorption:main"
 surfaces-analyze = "surfaces_agent.tools.analysis:main"
+surfaces-md = "surfaces_agent.tools.md:main"
+surfaces-search = "surfaces_agent.tools.search:main"
+surfaces-supercell = "surfaces_agent.tools.supercell:main"
 
 [tool.setuptools]
 packages = ["surfaces_agent", "surfaces_agent.agent", "surfaces_agent.tools"]

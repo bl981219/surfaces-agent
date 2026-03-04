@@ -10,3 +10,6 @@ build/
 *.cif
 *output/
 .env
+
+# Coding agent specific files
+GEMINI.md

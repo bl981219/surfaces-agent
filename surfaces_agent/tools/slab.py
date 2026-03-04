@@ -1,17 +1,15 @@
-# surfaces_agent/tools/slab.py
 import argparse
 import sys
 import os
 import contextlib
 import warnings
 from typing import List
+from pathlib import Path
 import numpy as np
 from pydantic import BaseModel, Field
 from pymatgen.core.surface import SlabGenerator
 from pymatgen.core import Structure
-from surfaces_agent.agent.state import ExecutionState
-
-_global_state = ExecutionState()
+from surfaces_agent.agent.state import global_state as state
 
 @contextlib.contextmanager
 def suppress_output():
@@ -38,26 +36,36 @@ def get_surface_termination(slab) -> str:
 def generate_and_relax_slab(
     bulk_ref_id: str, 
     miller: List[int], 
-    min_slab_size: float, 
-    min_vacuum: float
+    min_slab_size: float = 10.0, 
+    min_vacuum: float = 15.0
 ) -> str:
-    """Cleaves a surface, relaxes bulk and slab, and calculates surface energy."""
-    state = _global_state
+    """
+    Core Surface Creation Tool: Cleaves a bulk crystal along specific Miller indices and relaxes the resulting slab using CHGNet ML-interatomic potentials.
     
-    # --- SMART LOADING LOGIC ---
+    This tool performs the transition from 3D bulk to 2D surface. It:
+    1. Loads a bulk structure (from a file or state ID).
+    2. Performs a full cell+atom relaxation of the bulk to get a consistent baseline energy.
+    3. Cleaves the surface along the requested Miller indices (e.g., [1, 1, 1]).
+    4. Automatically centers the slab and adds vacuum to prevent periodic image interaction.
+    5. Applies Selective Dynamics: The bottom half of the slab is fixed to mimic the 'bulk-like' interior, while the top half is free to relax.
+    6. Calculates the Surface Energy (gamma) in J/m² by comparing the slab energy to the relaxed bulk baseline.
+    
+    Use this when the user asks to 'cleave', 'create a surface', or 'calculate surface energy' for a material.
+    """
+    
     if os.path.isfile(bulk_ref_id):
         try:
-            bulk_structure = Structure.from_file(bulk_ref_id)
+            bulk_struct = Structure.from_file(bulk_ref_id)
             print(f"   [Tool] Loaded bulk directly from file: {bulk_ref_id}")
         except Exception as e:
             return f"Error parsing structure file '{bulk_ref_id}': {str(e)}"
     else:
         try:
-            bulk_structure = state.load(bulk_ref_id)
+            bulk_struct = state.load(bulk_ref_id)
             print(f"   [Tool] Loaded bulk from agent state ID: {bulk_ref_id}")
         except KeyError:
-            return f"Error: '{bulk_ref_id}' is neither a valid file path nor a recognized state ID."
-    
+            return f"Error: '{bulk_ref_id}' is not a valid file or state ID."
+
     try:
         with suppress_output():
             from chgnet.model.model import CHGNet
@@ -66,7 +74,7 @@ def generate_and_relax_slab(
         return "Error: CHGNet or PyTorch is not installed."
 
     try:
-        formula = bulk_structure.composition.reduced_formula
+        formula = bulk_struct.composition.reduced_formula
         miller_str = f"({miller[0]}{miller[1]}{miller[2]})"
         
         print(f"   [Tool] Initializing CHGNet...")
@@ -77,7 +85,7 @@ def generate_and_relax_slab(
         # 1. Relax Bulk (Cell + Atoms)
         print(f"   [Tool] Relaxing bulk {formula} (Cell+Atoms)...")
         with suppress_output():
-            bulk_relax = optimizer.relax(bulk_structure, relax_cell=True, verbose=False)
+            bulk_relax = optimizer.relax(bulk_struct, relax_cell=True, verbose=False)
         
         relaxed_bulk = bulk_relax["final_structure"]
         with suppress_output():
@@ -139,15 +147,23 @@ def generate_and_relax_slab(
         n_atoms = len(relaxed_slab)
         surface_energy_j_m2 = ((slab_energy - (n_atoms * e_bulk_per_atom)) / (2 * area)) * 16.02176
 
-        # 5. Save State
+        # 5. Save State and Local File
         ref_id = state.save(relaxed_slab, prefix=f"slab_{formula}_{miller[0]}{miller[1]}{miller[2]}")
+        
+        out_dir = Path("output")
+        out_dir.mkdir(exist_ok=True)
+        filename = out_dir / f"{formula}_{miller[0]}{miller[1]}{miller[2]}_relaxed.vasp"
+        
+        from pymatgen.io.vasp import Poscar
+        Poscar(relaxed_slab).write_file(str(filename))
 
         output = (
             f"Successfully generated and relaxed {formula} {miller_str} slab.\n"
             f"- Termination: {term_type}\n"
             f"- Bulk Energy: {e_bulk_per_atom:.4f} eV/atom\n"
             f"- Surface Energy (CHGNet): {surface_energy_j_m2:.3f} J/m²\n"
-            f"- Relaxed Slab State ID: '{ref_id}'\n\n"
+            f"- Relaxed Slab State ID: '{ref_id}'\n"
+            f"- Saved to: {filename}\n\n"
             f"AGENT INSTRUCTION: Please use your Google Search tool to find experimental or DFT literature values "
             f"(with DOI) for the surface energy of {formula} {miller_str} and compare it to the calculated value above."
         )
@@ -157,14 +173,26 @@ def generate_and_relax_slab(
         return f"Error during slab relaxation: {str(e)}"
 
 def main():
-    parser = argparse.ArgumentParser(description="Cleave and relax a surface slab using CHGNet.")
-    parser.add_argument("--bulk-ref-id", type=str, required=True, help="State ID or path to bulk structure file")
-    parser.add_argument("--miller", type=int, nargs=3, required=True, help="Miller indices (e.g., 0 0 1)")
-    parser.add_argument("--min-slab", type=float, default=10.0, help="Minimum slab thickness (Å)")
-    parser.add_argument("--min-vacuum", type=float, default=15.0, help="Minimum vacuum thickness (Å)")
+    import argparse
+    parser = argparse.ArgumentParser(description="Generate and relax a surface slab from a bulk structure.")
+    parser.add_argument("--bulk-file", type=str, required=True, help="Path to the bulk structure file (e.g., CIF, POSCAR).")
+    parser.add_argument("--miller", type=int, nargs=3, required=True, help="Miller indices (e.g., 0 0 1).")
+    parser.add_argument("--min-slab-size", type=float, default=10.0, help="Minimum slab thickness in Angstroms.")
+    parser.add_argument("--min-vacuum", type=float, default=15.0, help="Minimum vacuum size in Angstroms.")
     
     args = parser.parse_args()
-    print(generate_and_relax_slab(args.bulk_ref_id, args.miller, args.min_slab, args.min_vacuum))
+    
+    try:
+        result = generate_and_relax_slab(
+            args.bulk_file, 
+            args.miller, 
+            args.min_slab_size, 
+            args.min_vacuum
+        )
+        print(result)
+    except Exception as e:
+        print(f"Fatal Tool Error: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

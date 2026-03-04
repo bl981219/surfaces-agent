@@ -1,28 +1,31 @@
 # surfaces_agent/agent/registry.py
-from typing import Callable, Dict, Any, Type
+from typing import Callable, Dict, Any, Type, List, Optional
 from pydantic import BaseModel
-from surfaces_agent.agent.state import ExecutionState
+from surfaces_agent.agent.state import global_state, ExecutionState
 
 class ToolRegistry:
-    def __init__(self, state: ExecutionState):
+    def __init__(self, state: ExecutionState = global_state):
         self._tools: Dict[str, dict] = {}
-        self.state = state  # The registry now owns the state blackboard
+        self.state = state
 
-    def register(self, name: str, description: str, schema: Type[BaseModel], func: Callable):
+    def register(self, func: Callable, schema: Type[BaseModel], name: Optional[str] = None, description: Optional[str] = None):
         """Registers a deterministic scientific module."""
+        name = name or func.__name__
+        description = description or func.__doc__ or "No description provided."
+        
         self._tools[name] = {
-            "description": description,
+            "description": description.strip(),
             "schema": schema,
             "func": func
         }
 
-    def get_llm_tools(self) -> list[dict]:
+    def get_llm_tools(self) -> List[dict]:
         """Converts registered tools into the JSON schema required by LLMs."""
         llm_tools = []
         for name, tool_data in self._tools.items():
-            schema = tool_data["schema"].schema()
+            # Pydantic v2 compatibility
+            schema = tool_data["schema"].model_json_schema()
             
-            # Google/OpenAI standard function calling format
             llm_tools.append({
                 "type": "function",
                 "function": {
@@ -38,7 +41,7 @@ class ToolRegistry:
         return llm_tools
 
     def execute(self, name: str, arguments: Dict[str, Any]) -> str:
-        """Executes the mapped Python function with validated arguments and state."""
+        """Executes the mapped Python function with validated arguments."""
         if name not in self._tools:
             return f"Error: Tool '{name}' not found."
         
@@ -47,8 +50,9 @@ class ToolRegistry:
             # Validate LLM output against the Pydantic schema
             validated_args = tool["schema"](**arguments)
             
-            # Execute the deterministic code, injecting the shared state
-            result = tool["func"](**validated_args.model_dump(), state=self.state)
+            # Execute the deterministic code
+            # Note: We don't inject state anymore since tools use global_state directly
+            result = tool["func"](**validated_args.model_dump())
             return str(result)
         except Exception as e:
             return f"Error executing {name}: {str(e)}"

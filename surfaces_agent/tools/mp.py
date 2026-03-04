@@ -4,21 +4,24 @@ import argparse
 import sys
 from pathlib import Path
 from pydantic import BaseModel, Field
-from surfaces_agent.agent.state import ExecutionState
+from surfaces_agent.agent.state import global_state as state
 from dotenv import load_dotenv
-
-_global_state = ExecutionState()
 
 class MPQuerySchema(BaseModel):
     formula: str = Field(..., description="The exact chemical formula to fetch (e.g., 'SrTiO3').")
     
 def fetch_bulk_structure(formula: str) -> str:
     """
-    Only use it when the user is asking for a bulk structure by formula. This tool queries the Materials Project for the most stable polymorph of the given formula, converts it to a conventional cell, checks its thermodynamic stability, and saves it to the agent's state. 
-    fetches the most stable bulk structure for a given formula from the Materials Project, converts it to a conventional cell.
-    Fetches stable bulk structure, converts to conventional cell, and checks hull stability."""
-    state = _global_state
+    Initial research tool: Fetches the most thermodynamically stable (ground state) bulk crystal structure for a given chemical formula from the Materials Project.
     
+    This tool is the essential first step for any surface science workflow. It:
+    1. Identifies the polymorph with the lowest energy above hull.
+    2. Converts the primitive cell to a Standardized Conventional Cell (critical for Miller index accuracy).
+    3. Saves the structure to the agent's internal state for downstream cleaving.
+    4. Reports the Materials Project ID and symmetry space group.
+    
+    Use this when the user mentions a material name or formula (e.g., 'SrTiO3', 'Gold', 'Iron') but hasn't provided a file.
+    """
     load_dotenv()
     api_key = os.environ.get("MAPI_KEY")
     if not api_key:
@@ -32,33 +35,28 @@ def fetch_bulk_structure(formula: str) -> str:
         
         with MPRester(api_key) as mpr:
             # 1. Search for the most stable polymorph
-            # Using the modern 'search' which returns a list of SummaryDoc objects
             docs = mpr.summary.search(formula=[formula])
             
             if not docs:
                 return f"Error: No structures found for formula {formula}."
             
-            # Sort by energy_above_hull to find the ground state (closest to 0)
-            # Newer API uses attributes directly, but we'll be safe with getattr
             docs = sorted(docs, key=lambda x: getattr(x, "energy_above_hull", float('inf')))
             best_doc = docs[0]
             
             # 2. Extract and Validate Data
             mat_id = getattr(best_doc, "material_id", "unknown")
             e_above_hull = getattr(best_doc, "energy_above_hull", 0.0)
-            # Use structure directly from the document object
             structure = getattr(best_doc, "structure", None)
 
             if structure is None:
                 return f"Error: Could not extract structure for material {mat_id}."
 
             # 3. CONVENTIONAL CELL CONVERSION
-            # Crucial for surface science to ensure (001) aligns with crystal axes
             sga = SpacegroupAnalyzer(structure)
             conventional_structure = sga.get_conventional_standard_structure()
             spg_symbol = sga.get_space_group_symbol()
             
-            # 4. Thermodynamic Stability (Convex Hull)
+            # 4. Thermodynamic Stability
             if e_above_hull == 0:
                 stability_msg = "Thermodynamic ground state (on the Convex Hull)."
             else:

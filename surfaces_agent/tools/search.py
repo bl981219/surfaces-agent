@@ -1,5 +1,4 @@
 # surfaces_agent/tools/search.py
-# surfaces_agent/tools/search.py
 import os
 from google import genai
 import argparse
@@ -8,7 +7,14 @@ from dotenv import load_dotenv
 
 def search_scientific_knowledge(query: str, context: str = "materials science") -> str:
     """
-    Search the internet for scientific data, literature values, and DOIs.
+    Literature & Data Discovery Tool: Performs a targeted search of the scientific internet to find DOIs, experimental benchmarks, and literature values.
+    
+    This tool provides 'grounding' for the agent's calculations. It:
+    1. Queries the Google Search engine for specific scientific data (e.g., 'surface energy of SrTiO3 (001)').
+    2. Identifies and extracts DOI references from the search results.
+    3. Provides a technical summary that links the calculated results to established literature.
+    
+    Use this when the user asks to 'compare with literature', 'find a DOI', 'check experimental values', or 'verify the surface energy against published data'.
     """
     load_dotenv()
     api_key = os.environ.get("API_KEY")

@@ -25,3 +25,6 @@ class ExecutionState:
     def clear(self):
         """Clears the blackboard for a new execution loop."""
         self._store.clear()
+
+# Global singleton for tool-wide state sharing
+global_state = ExecutionState()

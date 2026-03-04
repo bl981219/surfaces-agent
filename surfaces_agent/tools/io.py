@@ -3,19 +3,25 @@ import argparse
 import sys
 import os
 from pydantic import BaseModel, Field
-from surfaces_agent.agent.state import ExecutionState
+from surfaces_agent.agent.state import global_state as state
 from pymatgen.core import Structure
-
-_global_state = ExecutionState()
 
 class SaveStructureSchema(BaseModel):
     ref_id: str = Field(..., description="The state reference ID of the structure.")
     filename: str = Field(..., description="The output filename (e.g., structure.cif, POSCAR, slab.vasp).")
 
 def save_structure(ref_id: str, filename: str) -> str:
-    """Saves a structure from the agent state to disk, handling format inference."""
-    state = _global_state
+    """
+    Export Utility Tool: Saves a structure from the agent's internal memory (state ID) to a physical file on disk.
     
+    This tool is used to 'materialize' the results of other tools. It:
+    1. Retrieves the structure object using its reference ID.
+    2. Automatically detects the requested format based on the file extension (.cif, .vasp, .xyz).
+    3. Handles VASP-specific formatting (POSCAR/CONTCAR) using dedicated writers to ensure coordinate precision.
+    4. Ensures the target directory exists before writing.
+    
+    Use this when the user says 'save the structure', 'export the slab', or 'write the bulk to a CIF file'.
+    """
     try:
         structure = state.load(ref_id)
     except KeyError:
