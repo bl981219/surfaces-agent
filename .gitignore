@@ -1,0 +1,10 @@
+# Python environments and caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+agent_env/
+.env
+
+# Generated data files and CHGNet outputs
+*.cif
+chgnet_output/
