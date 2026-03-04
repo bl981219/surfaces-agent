@@ -62,7 +62,7 @@ surfaces-agent
 Run a complete, multi-step workflow from a single terminal command.
 
 ```bash
-surfaces-agent --prompt "Fetch the bulk structure of SrTiO3. Relax bulk structure with CHGNet. Save the relaxed structure as bulk.cif. From that bulk structure, cleave the (001) BO2 terminated surface, save it as slab.cif. Relax slab to get the surface energy, and then save the final relaxed slab as relaxed_slab.cif. Try to compare with literature value."
+surfaces-agent --prompt "Fetch the bulk structure of SrTiO3. Relax bulk structure with CHGNet. Save the relaxed structure as CONTCAR_bulk. From that bulk structure, cleave the (001) BO2 terminated surface, save it as CONTCAR_slab. Relax slab to get the surface energy, and then save the final relaxed slab as CONTCAR_slab. Try to compare the surface energy with literature values. Give me one structure of the slab with CO adsorbate on its bridge site. Save the strcutre as CONTCAR_ads."
 ```
 
 ### 3. Manual Tool Usage
@@ -74,6 +74,9 @@ surfaces-mp --formula SrTiO3
 
 # Manually cleave a slab (requires a bulk state ID)
 surfaces-slab --bulk-ref-id bulk_SrTiO3_xyz --miller 0 0 1
+
+# Manually create surface adsorbates
+surfaces-adsorb --slab-ref-id slab_SrTiO3_001_x9y8z7 --adsorbate CH 
 ```
 
 ---
