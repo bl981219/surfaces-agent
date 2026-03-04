@@ -8,4 +8,4 @@ agent_env/
 # Generated data files and CHGNet outputs
 *.cif
 chgnet_output/
-*.sh
+bill_API.txt
