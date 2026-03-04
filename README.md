@@ -62,7 +62,7 @@ surfaces-agent
 Run a complete, multi-step workflow from a single terminal command.
 
 ```bash
-surfaces-agent --prompt "Fetch Pt, cleave the (111) surface, and calculate the surface energy."
+surfaces-agent --prompt "Fetch the bulk structure of SrTiO3. Relax bulk structure with CHGNet. Save the relaxed structure as bulk.cif. From that bulk structure, cleave the (001) BO2 terminated surface, save it as slab.cif. Relax slab to get the surface energy, and then save the final relaxed slab as relaxed_slab.cif. Try to compare with literature value."
 ```
 
 ### 3. Manual Tool Usage
@@ -88,7 +88,3 @@ Tools are decoupled from the LLM logic. To add a new capability:
 
 ### Output Management
 All files exported via the `save_structure` tool or the agent are automatically routed to the `./output/` directory to maintain a clean workspace.
-
-## Troubleshooting
-* **429 Resource Exhausted:** The free tier of Gemini Pro has strict limits. Switch to `gemini-2.5-flash` for high-frequency tool orchestration.
-* **State ID Errors:** Reference IDs (e.g., `bulk_SrTiO3_4ffac67b`) only exist in the current RAM of a running process. If the shell restarts, the IDs are cleared.
