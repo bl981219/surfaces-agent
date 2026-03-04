@@ -12,9 +12,12 @@ _global_state = ExecutionState()
 class MPQuerySchema(BaseModel):
     formula: str = Field(..., description="The exact chemical formula to fetch (e.g., 'SrTiO3').")
     
-def fetch_bulk_structure(formula: str, state: ExecutionState = None) -> str:
-    """Fetches stable bulk structure, converts to conventional cell, and checks hull stability."""
-    state = state or _global_state
+def fetch_bulk_structure(formula: str) -> str:
+    """
+    Only use it when the user is asking for a bulk structure by formula. This tool queries the Materials Project for the most stable polymorph of the given formula, converts it to a conventional cell, checks its thermodynamic stability, and saves it to the agent's state. 
+    fetches the most stable bulk structure for a given formula from the Materials Project, converts it to a conventional cell.
+    Fetches stable bulk structure, converts to conventional cell, and checks hull stability."""
+    state = _global_state
     
     load_dotenv()
     api_key = os.environ.get("MAPI_KEY")
