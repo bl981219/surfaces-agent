@@ -1,93 +1,56 @@
-# surfaces-agent
+# Surfaces Agent: A Scientific Orchestrator
 
-Autonomous agentic AI engine for computational surface science and electrochemistry. This package uses a Tool-First Architecture to safely route high-level natural language queries into strict, deterministic Python execution modules.
+This project is an autonomous agentic workflow designed for computational materials science. It integrates structural analysis (DFT/MLFF) with live literature grounding via the Google Gemini API.
 
-## Features
+## 🛠 Setup
 
-* **Deterministic Orchestration:** Uses a strict tool registry (via Pydantic) to prevent physical hallucinations. The LLM acts as a "router and parameter-filler," ensuring physics is handled by code, not probability.
-* **Stateful Execution:** Utilizes an in-memory blackboard (`state.py`) to pass complex objects (e.g., `ase.Atoms`, Pymatgen structures) between tools using reference IDs, avoiding token-limit issues.
-* **ML-Accelerated Science:** Built-in support for CHGNet for rapid structure relaxation and surface energy calculations.
-* **Unified CLI Suite:** All tools can be run autonomously via the agent shell or manually via terminal commands (e.g., `surfaces-slab`, `surfaces-mp`).
-* **Environment Management:** Native support for `.env` files to securely manage Google and Materials Project API keys.
+### 1. Environment Variables
+Create a `.env` file in the root directory and populate it with your API keys and preferred model backbone.
 
----
+```env
+# Materials Project API Key
+MAPI_KEY="your_materials_project_api_key"
 
-## Installation
+# Google Gemini API Key
+API_KEY="your_gemini_api_key"
+
+# The "Brain" of the Agent (Centralized for all tools)
+AGENT_MODEL="gemini-3.1-flash-lite-preview"
+```
+
+### 2. Installation
+Install the package in editable mode to register the terminal commands:
 
 ```bash
-# Clone the repository
-git clone [https://github.com/bl981219/surfaces-agent.git](https://github.com/bl981219/surfaces-agent.git)
-cd surfaces-agent
-
-# Install in editable mode
 pip install -e .
 ```
 
-### Configuration
-Create a `.env` file in the root directory to store your API keys:
+## 🚀 Usage
 
-```bash
-GOOGLE_API_KEY="your_gemini_api_key"
-MAPI_KEY="your_materials_project_key"
-```
-
----
-
-## Project Structure
-
-This suite implements a professional Python packaging structure with hyphenated prefixes for all command-line tools. Every tool contains a zero-argument `def main():` wrapper with internal `argparse` logic.
-
-* `surfaces-agent`: Interactive AI reasoning loop and orchestration engine.
-* `surfaces-mp`: Materials Project database query tool.
-* `surfaces-slab`: Surface cleaving and CHGNet relaxation module.
-* `surfaces-save`: I/O utility for exporting state objects to the `/output` folder.
-
----
-
-## Usage Examples
-
-### 1. Interactive Shell (Recommended)
-Launch the agent into an interactive session where state and conversation memory persist across prompts.
+Launch the interactive shell:
 
 ```bash
 surfaces-agent
 ```
 
-**Example Session:**
-> `>> Fetch the bulk structure of SrTiO3`
-> `>> Cleave the (001) surface and relax it with CHGNet`
-> `>> Save the final result as srtio3_relaxed.vasp`
+### Example Multi-Step Workflow
+You can give the agent complex, multi-stage scientific commands. For example:
 
-### 2. Single-Prompt Execution
-Run a complete, multi-step workflow from a single terminal command.
+> "Extract the VASP characteristics for the folder `output/DFT`. Include the PDOS plot for surface atoms between z=13.0 and z=15.0 Å."
 
-```bash
-surfaces-agent --prompt "Fetch the bulk structure of SrTiO3. Relax bulk structure with CHGNet. Save the relaxed structure as CONTCAR_bulk. From that bulk structure, cleave the (001) BO2 terminated surface, save it as CONTCAR_slab. Relax slab to get the surface energy, and then save the final relaxed slab as CONTCAR_slab. Try to compare the surface energy with literature values. Give me one structure of the slab with CO adsorbate on its bridge site. Save the strcutre as CONTCAR_ads."
-```
+## 🧬 Integrated Tools
 
-### 3. Manual Tool Usage
-Each module can be used independently by a human researcher without the AI engine.
+| Terminal Command | Agent Tool Name | Function |
+| :--- | :--- | :--- |
+| (Agent Only) | `fetch_bulk_structure` | Downloads the ground-state bulk structure from Materials Project. |
+| (Agent Only) | `generate_and_relax_slab` | Cleaves a surface, applies selective dynamics, and relaxes using CHGNet. |
+| (Agent Only) | `generate_adsorption_configs` | Places molecules on surface sites and ranks them by energy. |
+| `surfaces-search`| `search_scientific_knowledge` | Bypasses API limits to provide live web search results and DOIs. |
+| `surfaces-analyze`| `extract_vasp_characteristics` | Parses OUTCAR, CONTCAR, and DOSCAR to extract energy, stress, Ef, and PDOS. |
+| (Agent Only) | `save_structure` | Exports results in `.cif` or VASP `.vasp` formats. |
 
-```bash
-# Manually query a formula
-surfaces-mp --formula SrTiO3
-
-# Manually cleave a slab (requires a bulk state ID)
-surfaces-slab --bulk-ref-id bulk_SrTiO3_xyz --miller 0 0 1
-
-# Manually create surface adsorbates
-surfaces-adsorb --slab-ref-id slab_SrTiO3_001_x9y8z7 --adsorbate CH 
-```
-
----
-
-## Architecture Details
-
-### The Tool Registry
-Tools are decoupled from the LLM logic. To add a new capability:
-1. Create a module in `surfaces_agent/tools/`.
-2. Define a `Pydantic` schema for input validation.
-3. Register the function and schema in `surfaces_agent/agent/engine.py`.
-
-### Output Management
-All files exported via the `save_structure` tool or the agent are automatically routed to the `./output/` directory to maintain a clean workspace.
+## 📁 Project Structure
+- `surfaces_agent/agent/engine.py`: The main orchestrator loop.
+- `surfaces_agent/tools/search.py`: The standalone internet research tool.
+- `surfaces_agent/tools/slab.py`: Physics logic for surface cleaving and relaxation.
+- `surfaces_agent/tools/analysis.py`: VASP output extractor and plotting script.

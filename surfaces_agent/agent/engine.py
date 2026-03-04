@@ -12,6 +12,7 @@ from surfaces_agent.tools.slab import generate_and_relax_slab
 from surfaces_agent.tools.adsorption import generate_adsorption_configs
 from surfaces_agent.tools.io import save_structure
 from surfaces_agent.tools.search import search_scientific_knowledge
+from surfaces_agent.tools.analysis import extract_vasp_characteristics
 
 def main():
     parser = argparse.ArgumentParser(description="Run the Surfaces Agent.")
@@ -20,25 +21,30 @@ def main():
 
     load_dotenv()
     
-    # Priority: CLI flag > .env (AGENT_MODEL) > Default
     api_key = os.environ.get("API_KEY")
     model_id = args.model or os.environ.get("AGENT_MODEL", "gemini-3.1-flash-lite-preview")
 
+    if not api_key:
+        print("Error: 'API_KEY' environment variable is not set.")
+        sys.exit(1)
+
     client = genai.Client(api_key=api_key)
-    print(f"🤖 surfaces-agent initialized with {model_id}. Type 'exit' to quit.")
+    print(f"🤖 surfaces-agent initialized with {model_id}. Key: API_KEY detected. Type 'exit' to quit.")
 
     agent_tools = [
-        search_scientific_knowledge,
         fetch_bulk_structure,
         generate_and_relax_slab,
         generate_adsorption_configs,
-        save_structure
+        save_structure,
+        search_scientific_knowledge,
+        extract_vasp_characteristics
     ]
 
     system_instruction = (
         "You are an autonomous computational materials science orchestrator. "
         "Use search_scientific_knowledge for literature benchmarks and DOIs. "
-        "Use structural tools only when a calculation or file generation is requested."
+        "Use structural tools to generate slabs or configurations. "
+        "Use extract_vasp_characteristics to read and analyze completed VASP OUTCAR, CONTCAR, and DOSCAR outputs."
     )
 
     chat = client.chats.create(

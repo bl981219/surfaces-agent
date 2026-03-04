@@ -27,6 +27,7 @@ surfaces-mp = "surfaces_agent.tools.mp:main"
 surfaces-pourbaix = "surfaces_agent.tools.pourbaix:main"
 surfaces-save = "surfaces_agent.tools.io:main"
 surfaces-adsorb = "surfaces_agent.tools.adsorption:main"
+surfaces-analyze = "surfaces_agent.tools.analysis:main"
 
 [tool.setuptools]
 packages = ["surfaces_agent", "surfaces_agent.agent", "surfaces_agent.tools"]
