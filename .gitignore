@@ -10,4 +10,3 @@ build/
 *.cif
 chgnet_output/
 .env
-bill_API.txt
