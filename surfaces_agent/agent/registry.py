@@ -1,11 +1,12 @@
 # surfaces_agent/agent/registry.py
-import inspect
 from typing import Callable, Dict, Any, Type
 from pydantic import BaseModel
+from surfaces_agent.agent.state import ExecutionState
 
 class ToolRegistry:
-    def __init__(self):
+    def __init__(self, state: ExecutionState):
         self._tools: Dict[str, dict] = {}
+        self.state = state  # The registry now owns the state blackboard
 
     def register(self, name: str, description: str, schema: Type[BaseModel], func: Callable):
         """Registers a deterministic scientific module."""
@@ -21,7 +22,7 @@ class ToolRegistry:
         for name, tool_data in self._tools.items():
             schema = tool_data["schema"].schema()
             
-            # OpenAI/Gemini standard function calling format
+            # Google/OpenAI standard function calling format
             llm_tools.append({
                 "type": "function",
                 "function": {
@@ -37,7 +38,7 @@ class ToolRegistry:
         return llm_tools
 
     def execute(self, name: str, arguments: Dict[str, Any]) -> str:
-        """Executes the mapped Python function with validated arguments."""
+        """Executes the mapped Python function with validated arguments and state."""
         if name not in self._tools:
             return f"Error: Tool '{name}' not found."
         
@@ -45,8 +46,9 @@ class ToolRegistry:
         try:
             # Validate LLM output against the Pydantic schema
             validated_args = tool["schema"](**arguments)
-            # Execute the deterministic scientific code
-            result = tool["func"](**validated_args.model_dump())
+            
+            # Execute the deterministic code, injecting the shared state
+            result = tool["func"](**validated_args.model_dump(), state=self.state)
             return str(result)
         except Exception as e:
             return f"Error executing {name}: {str(e)}"
