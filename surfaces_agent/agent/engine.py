@@ -6,6 +6,7 @@ from surfaces_agent.agent.state import ExecutionState
 from surfaces_agent.llm.client import GeminiClient
 from surfaces_agent.tools.mp import MPQuerySchema, fetch_bulk_structure
 from surfaces_agent.tools.io import SaveStructureSchema, save_structure
+from surfaces_agent.tools.slab import SlabRelaxationSchema, generate_and_relax_slab
 
 # Import your scientific tools and schemas
 from surfaces_agent.tools.mp import MPQuerySchema, fetch_bulk_structure
@@ -13,7 +14,7 @@ from surfaces_agent.tools.mp import MPQuerySchema, fetch_bulk_structure
 def build_registry(state: ExecutionState) -> ToolRegistry:
     registry = ToolRegistry(state)
     
-    # Register the Materials Project Tool
+    # Materials Project Query Tool
     registry.register(
         name="fetch_bulk_structure",
         description="Fetches the lowest energy bulk structure for a given chemical formula from the Materials Project database.",
@@ -21,11 +22,20 @@ def build_registry(state: ExecutionState) -> ToolRegistry:
         func=fetch_bulk_structure
     )
     
+    # Save Structure Tool
     registry.register(
         name="save_structure",
         description="Saves a structure from the execution state to a local file. Only use this if the user explicitly asks to save or export a file.",
         schema=SaveStructureSchema,
         func=save_structure
+    )
+
+    # Surface Cleave & MLFF Relaxation Tool
+    registry.register(
+        name="generate_and_relax_slab",
+        description="Cleaves a surface slab from a bulk structure reference ID, relaxes it using the CHGNet ML force field, and calculates the surface energy.",
+        schema=SlabRelaxationSchema,
+        func=generate_and_relax_slab
     )
 
     # Future tools will go here:
