@@ -4,19 +4,21 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "surfaces-agent"
-version = "0.2.0"
-description = "Agentic AI assistant for surface chemistry, generating slabs, and running MLIAP relaxations."
+version = "0.1.0"
+description = "Autonomous agentic AI engine for surface chemistry and catalytic modeling"
 readme = "README.md"
 requires-python = ">=3.10"
+
 dependencies = [
-    "langchain",
-    "langchain-openai",
-    "langchain-google-genai",
-    "pymatgen",
-    "chgnet",
-    "torch",
-    "mp-api"
+    "pydantic>=2.0",
+    "ase>=3.22",
+    "pymatgen>=2023.10",
+    "google-genai",
+    "openai"
 ]
 
 [project.scripts]
-surfaces-agent = "surfaces_agent.cli:main"
+surfaces-agent = "surfaces_agent.agent.engine:main"
+surfaces-slab = "surfaces_agent.tools.slab:main"
+surfaces-mp = "surfaces_agent.tools.mp:main"
+surfaces-pourbaix = "surfaces_agent.tools.pourbaix:main"
