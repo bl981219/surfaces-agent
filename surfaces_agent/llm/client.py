@@ -1,11 +1,11 @@
 import os
 from google import genai
 from google.genai import types
-from dotenv import load_dotenv  # <-- 1. Import this
+from dotenv import load_dotenv
 
 class GeminiClient:
-    def __init__(self, model_name: str = "gemini-2.5-flash", temperature: float = 0.0):
-        load_dotenv()  # <-- 2. Call this before reading os.environ
+    def __init__(self, model_name: str = "gemini-2.5-flash-lite", temperature: float = 0.0):
+        load_dotenv()
         api_key = os.environ.get("GOOGLE_API_KEY")
         
         if not api_key:
