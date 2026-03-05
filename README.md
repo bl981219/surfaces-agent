@@ -6,7 +6,7 @@ Autonomous AI Engine for Computational Surface Science, Catalysis, and Electroch
 
 ---
 
-## Key Features
+## 🌟 Key Features
 
 *   **Computational Workspace & State:** The agent operates within a dedicated `workspace/` directory and maintains persistent scientific state across conversational turns. It intuitively understands concepts like "current structure" and "latest results".
 *   **Transparent Reasoning:** The agent explains its scientific reasoning, proposes step-by-step plans, and asks for confirmation before executing long calculations.
@@ -15,6 +15,49 @@ Autonomous AI Engine for Computational Surface Science, Catalysis, and Electroch
 *   **Electronic Descriptors:** Automated calculation of **Oxygen p-band centers** and **Bader charges** (via PACMAN/ACF) to quantify surface reactivity.
 *   **Defect & Pathway Engineering:** Single-command generation of surface vacancies and NEB (Nudged Elastic Band) transition state pathways.
 *   **Automatic Logging:** Every session is logged to JSON files in `workspace/logs/` for full reproducibility and troubleshooting.
+
+---
+
+## 🔑 API Key Setup Instructions
+
+To use this agent, you need two API keys. Follow these steps to generate them:
+
+### 1. Google Gemini API Key (For the AI "Brain")
+1.  Visit the **[Google AI Studio](https://aistudio.google.com/)**.
+2.  Click on **"Get API key"** in the sidebar.
+3.  Click **"Create API key in new project"**.
+4.  **CRITICAL:** Ensure the **Generative Language API** is enabled. If you see a `403 Permission Denied` error later, visit the [Google Cloud Console](https://console.developers.google.com/apis/library/generativelanguage.googleapis.com) for your project and click **Enable**.
+5.  Copy the key and add it to your `.env` file as `API_KEY`.
+
+### 2. Materials Project API Key (For Bulk Structures)
+1.  Visit the **[Materials Project Dashboard](https://materialsproject.org/dashboard)**.
+2.  Sign in (via Google, GitHub, or Email).
+3.  Scroll down to the **API Key** section and click **"Generate"** or copy your existing key.
+4.  Copy the key and add it to your `.env` file as `MAPI_KEY`.
+
+---
+
+## 🚀 Installation & Configuration
+
+### 1. Installation
+```bash
+git clone https://github.com/bl981219/surfaces-agent.git
+cd surfaces-agent
+pip install .
+```
+
+### 2. Configuration
+Create a `.env` file in the root directory:
+```env
+# Materials Project Key
+MAPI_KEY="your_materials_project_key"
+
+# Google Gemini Key
+API_KEY="your_gemini_api_key"
+
+# Optional: Default model selection
+AGENT_MODEL="gemini-3.1-flash-lite-preview"
+```
 
 ---
 
@@ -35,25 +78,6 @@ The suite implements professional packaging. Every command follows the `surfaces
 | `surfaces-supercell`| **Structure Expander**| `expand_structure_to_supercell` |
 | `surfaces-search`| **Research Grounding**| `search_scientific_knowledge` |
 | `surfaces-save` | **I/O Utility** | `save_structure` |
-
----
-
-## Getting Started
-
-### 1. Installation
-```bash
-git clone https://github.com/bl981219/surfaces-agent.git
-cd surfaces-agent
-pip install .
-```
-
-### 2. Configuration
-Create a `.env` file in the root directory:
-```env
-MAPI_KEY="your_materials_project_key"
-API_KEY="your_gemini_api_key"
-AGENT_MODEL="gemini-3.1-flash-lite-preview"
-```
 
 ---
 
