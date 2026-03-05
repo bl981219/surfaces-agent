@@ -13,5 +13,9 @@ build/
 
 # Coding agent specific files
 GEMINI.md
+AGENT.md
 review_code.sh
 run_workflow.py
+
+# Local workspace
+workspace/
