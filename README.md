@@ -11,6 +11,7 @@ Autonomous AI Engine for Computational Surface Science, Catalysis, and Electroch
 *   **ML-Accelerated Dynamics:** Native integration with **CHGNet** for rapid structure relaxation and NVT Molecular Dynamics.
 *   **Electronic Descriptors:** Automated calculation of **Oxygen p-band centers** and **Bader charges** (via PACMAN/ACF) to quantify surface reactivity.
 *   **Intelligent Placement:** Algorithmic generation of adsorption configurations (ontop, bridge, hollow) with symmetry-based filtering.
+*   **Defect & Pathway Engineering:** Single-command generation of surface vacancies and NEB (Nudged Elastic Band) transition state pathways.
 *   **External Field Physics:** Support for external **Electric Fields** in MD simulations, including dynamic charge updates via PACMAN.
 *   **Literature Grounding:** A dedicated sub-agent queries DOIs and experimental benchmarks to compare with your calculated surface energies.
 *   **Stateful Memory:** Pass complex Python objects (structures, trajectories) between tools seamlessly via an internal reference system.
@@ -27,7 +28,9 @@ The suite implements professional packaging. Every command follows the `surfaces
 | `surfaces-agent` | **Agent Shell** | Interactive AI reasoning loop and multi-step orchestrator. |
 | `surfaces-mp` | **Bulk Fetcher** | Queries Materials Project for stable conventional bulk structures. |
 | `surfaces-slab` | **Surface Cleaver**| Cleaves slabs by Miller indices, applies selective dynamics, and relaxes. |
+| `surfaces-vacancy`| **Defect Prep** | Creates single atom vacancies (e.g., Oxygen vacancy) for MvK mechanisms. |
 | `surfaces-adsorb`| **Adsorption Prep**| Places molecules on sites and ranks them by CHGNet adsorption energy. |
+| `surfaces-neb` | **Pathway Prep** | Generates interpolated images between states for NEB barrier calculations. |
 | `surfaces-md` | **ML-MD Runner** | Runs NVT simulations with gas insertion and external E-fields. |
 | `surfaces-analyze`| **Descriptor Calc**| Extracts p-band centers, Bader charges, Ef, and plots surface PDOS. |
 | `surfaces-supercell`| **Structure Expander**| Expands a structure into a larger supercell (e.g., 3x3x1). |

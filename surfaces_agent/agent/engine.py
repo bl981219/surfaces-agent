@@ -15,6 +15,8 @@ from surfaces_agent.tools.search import search_scientific_knowledge
 from surfaces_agent.tools.analysis import extract_vasp_characteristics
 from surfaces_agent.tools.md import run_chgnet_md
 from surfaces_agent.tools.supercell import make_supercell
+from surfaces_agent.tools.vacancy import generate_vacancy
+from surfaces_agent.tools.neb import setup_neb
 
 def main():
     # Load .env first to ensure all API keys are available
@@ -53,7 +55,9 @@ def main():
         search_scientific_knowledge,
         extract_vasp_characteristics,
         run_chgnet_md,
-        make_supercell
+        make_supercell,
+        generate_vacancy,
+        setup_neb
     ]
 
     system_instruction = (
