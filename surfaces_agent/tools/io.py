@@ -3,7 +3,7 @@ import argparse
 import sys
 import os
 from pydantic import BaseModel, Field
-from surfaces_agent.agent.state import global_state as state
+from surfaces_agent.agent.session import global_state as state
 from pymatgen.core import Structure
 
 class SaveStructureSchema(BaseModel):

@@ -14,7 +14,7 @@ from pymatgen.io.vasp import Poscar
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.analysis.structure_matcher import StructureMatcher
-from surfaces_agent.agent.state import global_state as state
+from surfaces_agent.agent.session import global_state as state
 
 @contextlib.contextmanager
 def suppress_output():
@@ -128,7 +128,7 @@ def generate_tilt_orientations(base_structure: Structure, n_adsorbate_atoms: int
             continue
     return tilt_structures
 
-def generate_adsorption_configs(
+def enumerate_adsorption_sites(
     slab_ref_id: str, 
     adsorbate_name: str,
     custom_species: Optional[List[str]] = None,
@@ -220,7 +220,7 @@ def generate_adsorption_configs(
 
     # 7. IO Writing
     formula = slab.composition.reduced_formula
-    output_dir = os.path.join("output", f"adsorption_{formula}_{adsorbate_name}")
+    output_dir = os.path.join("workspace", f"adsorption_{formula}_{adsorbate_name}")
     os.makedirs(output_dir, exist_ok=True)
     z_coords = [site.coords[2] for site in slab]
     mid_z = min(z_coords) + (max(z_coords) - min(z_coords)) / 2.0
@@ -265,7 +265,7 @@ def main():
     coords = json.loads(args.custom_coords) if args.custom_coords else None
     
     try:
-        result = generate_adsorption_configs(
+        result = enumerate_adsorption_sites(
             args.slab_file, 
             args.adsorbate, 
             species, 

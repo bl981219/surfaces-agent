@@ -4,13 +4,13 @@ import argparse
 import sys
 from pathlib import Path
 from pydantic import BaseModel, Field
-from surfaces_agent.agent.state import global_state as state
+from surfaces_agent.agent.session import global_state as state
 from dotenv import load_dotenv
 
 class MPQuerySchema(BaseModel):
     formula: str = Field(..., description="The exact chemical formula to fetch (e.g., 'SrTiO3').")
     
-def fetch_bulk_structure(formula: str) -> str:
+def fetch_materials_project_structure(formula: str) -> str:
     """
     Initial research tool: Fetches the most thermodynamically stable (ground state) bulk crystal structure for a given chemical formula from the Materials Project.
     
@@ -65,7 +65,7 @@ def fetch_bulk_structure(formula: str) -> str:
             # 5. State Management & Local Export
             ref_id = state.save(conventional_structure, prefix=f"bulk_{formula}")
             
-            out_dir = Path("output")
+            out_dir = Path("workspace")
             out_dir.mkdir(exist_ok=True)
             cif_path = out_dir / f"{formula}_{mat_id}_conventional.cif"
             conventional_structure.to(filename=str(cif_path))
@@ -88,7 +88,7 @@ def main():
     args = parser.parse_args()
     
     try:
-        result = fetch_bulk_structure(args.formula)
+        result = fetch_materials_project_structure(args.formula)
         print(result)
     except Exception as e:
         print(f"Fatal Tool Error: {e}")

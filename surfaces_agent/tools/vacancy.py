@@ -7,14 +7,14 @@ from pydantic import BaseModel, Field
 from pymatgen.core import Structure
 from pymatgen.io.vasp import Poscar
 from typing import Optional
-from surfaces_agent.agent.state import global_state as state
+from surfaces_agent.agent.session import global_state as state
 
 class VacancyGenerationSchema(BaseModel):
     input_ref_id: str = Field(..., description="The state reference ID or file path of the slab.")
     species: str = Field("O", description="The element symbol to remove (e.g., 'O').")
     site_index: Optional[int] = Field(None, description="1-based index of the atom to remove. If None, removes the topmost atom of the specified species.")
 
-def generate_vacancy(input_ref_id: str, species: str = "O", site_index: Optional[int] = None) -> str:
+def create_surface_vacancy(input_ref_id: str, species: str = "O", site_index: Optional[int] = None) -> str:
     """
     Defect Engineering Tool: Creates a single atom vacancy (e.g., Oxygen vacancy) on a surface.
     
@@ -59,7 +59,7 @@ def generate_vacancy(input_ref_id: str, species: str = "O", site_index: Optional
     formula = struct.composition.reduced_formula
     ref_id = state.save(struct, prefix=f"vac_{species}_{formula}")
     
-    out_dir = Path("output")
+    out_dir = Path("workspace")
     out_dir.mkdir(exist_ok=True)
     filename = out_dir / f"{formula}_vac_{species}.vasp"
     Poscar(struct).write_file(str(filename))
@@ -79,7 +79,7 @@ def main():
     parser.add_argument("--index", type=int, help="1-based index of atom to remove (default: topmost).")
     args = parser.parse_args()
     
-    print(generate_vacancy(args.input, args.species, args.index))
+    print(create_surface_vacancy(args.input, args.species, args.index))
 
 if __name__ == "__main__":
     main()

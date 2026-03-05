@@ -8,14 +8,13 @@ Autonomous AI Engine for Computational Surface Science, Catalysis, and Electroch
 
 ## Key Features
 
+*   **Computational Workspace & State:** The agent operates within a dedicated `workspace/` directory and maintains persistent scientific state across conversational turns. It intuitively understands concepts like "current structure" and "latest results".
+*   **Transparent Reasoning:** The agent explains its scientific reasoning, proposes step-by-step plans, and asks for confirmation before executing long calculations.
+*   **Result Summarization:** Raw outputs from DFT or ML-MD are synthesized into readable, physically meaningful metrics (e.g., Energy, Max Force, Terminations).
 *   **ML-Accelerated Dynamics:** Native integration with **CHGNet** for rapid structure relaxation and NVT Molecular Dynamics.
 *   **Electronic Descriptors:** Automated calculation of **Oxygen p-band centers** and **Bader charges** (via PACMAN/ACF) to quantify surface reactivity.
-*   **Intelligent Placement:** Algorithmic generation of adsorption configurations (ontop, bridge, hollow) with symmetry-based filtering.
 *   **Defect & Pathway Engineering:** Single-command generation of surface vacancies and NEB (Nudged Elastic Band) transition state pathways.
-*   **External Field Physics:** Support for external **Electric Fields** in MD simulations, including dynamic charge updates via PACMAN.
-*   **Literature Grounding:** A dedicated sub-agent queries DOIs and experimental benchmarks to compare with your calculated surface energies.
-*   **Stateful Memory:** Pass complex Python objects (structures, trajectories) between tools seamlessly via an internal reference system.
-*   **Automatic Logging:** Every session is logged to `output/agent_session.log` for full reproducibility and troubleshooting.
+*   **Automatic Logging:** Every session is logged to JSON files in `workspace/logs/` for full reproducibility and troubleshooting.
 
 ---
 
@@ -23,20 +22,19 @@ Autonomous AI Engine for Computational Surface Science, Catalysis, and Electroch
 
 The suite implements professional packaging. Every command follows the `surfaces-` prefix standard.
 
-| Command | Capability | Scientific Significance |
+| Command | Capability | Scientific Semantic Name |
 | :--- | :--- | :--- |
 | `surfaces-agent` | **Agent Shell** | Interactive AI reasoning loop and multi-step orchestrator. |
-| `surfaces-mp` | **Bulk Fetcher** | Queries Materials Project for stable conventional bulk structures. |
-| `surfaces-slab` | **Surface Cleaver**| Cleaves slabs by Miller indices, applies selective dynamics, and relaxes. |
-| `surfaces-vacancy`| **Defect Prep** | Creates single atom vacancies (e.g., Oxygen vacancy) for MvK mechanisms. |
-| `surfaces-adsorb`| **Adsorption Prep**| Places molecules on sites and ranks them by CHGNet adsorption energy. |
-| `surfaces-neb` | **Pathway Prep** | Generates interpolated images between states for NEB barrier calculations. |
-| `surfaces-md` | **ML-MD Runner** | Runs NVT simulations with gas insertion and external E-fields. |
-| `surfaces-analyze`| **Descriptor Calc**| Extracts p-band centers, Bader charges, Ef, and plots surface PDOS. |
-| `surfaces-supercell`| **Structure Expander**| Expands a structure into a larger supercell (e.g., 3x3x1). |
-| `surfaces-search`| **Research Grounding**| Searches the web for DOIs, experimental benchmarks, and literature. |
-| `surfaces-save` | **I/O Utility** | Exports structures to POSCAR, CIF, or VASP formats with precision. |
-| `surfaces-pourbaix`| **Phase Stability** | (Under Development) Generates electrochemical Pourbaix diagrams. |
+| `surfaces-mp` | **Bulk Fetcher** | `fetch_materials_project_structure` |
+| `surfaces-slab` | **Surface Cleaver**| `generate_surface_slab` |
+| `surfaces-vacancy`| **Defect Prep** | `create_surface_vacancy` |
+| `surfaces-adsorb`| **Adsorption Prep**| `enumerate_adsorption_sites` |
+| `surfaces-neb` | **Pathway Prep** | `prepare_neb_pathway` |
+| `surfaces-md` | **ML-MD Runner** | `run_md_simulation` |
+| `surfaces-analyze`| **Descriptor Calc**| `analyze_electronic_properties` |
+| `surfaces-supercell`| **Structure Expander**| `expand_structure_to_supercell` |
+| `surfaces-search`| **Research Grounding**| `search_scientific_knowledge` |
+| `surfaces-save` | **I/O Utility** | `save_structure` |
 
 ---
 
@@ -61,46 +59,49 @@ AGENT_MODEL="gemini-3.1-flash-lite-preview"
 
 ## Usage Examples
 
-### Interactive Orchestration
+### Conversational Research
 Launch the agent to perform complex, multi-tool research workflows:
 ```bash
 surfaces-agent
 ```
-> `>> Fetch the bulk structure of SrTiO3.`
-> `>> From that structure, cleave the (001) TiO2-terminated surface.`
-> `>> Create a 3x3x1 supercell of the slab.`
-> `>> Run 2000 steps of MD at 800K with 5 CH4 molecules in the gas phase.`
-> `>> Calculate the p-band center of the surface oxygen atoms for the final frame.`
 
-### Manual CLI Usage
-Modules can be used independently for high-performance cluster scripting:
-
-**Generate a Supercell:**
-```bash
-surfaces-supercell --input output/SrTiO3_relaxed.vasp --scaling 3 3 1
-```
-
-**Analyze Electronic Properties:**
-```bash
-# Calculate p-band center and average Bader charges for surface oxygen (z > 14.0 A)
-surfaces-analyze --dir output/DFT_run --pband --bader --species O --zlow 14.0 --plot
-```
-
-**Run Complex MD:**
-```bash
-# Run MD with 10 CH4 molecules adsorbed on the surface and a -0.01 V/A E-field
-surfaces-md --input POSCAR_supercell --temp 873 --steps 5000 --field -0.01 --molecules '{"CH4": 10}' --placement adsorbed
-```
+**Example Session:**
+> **User:** load La0.6Sr0.4FeO3
+> 
+> **Agent:** Plan:
+> 1. Fetch bulk structure for La0.6Sr0.4FeO3 from the Materials Project.
+> 
+> Proceed?
+> 
+> **User:** yes
+> 
+> **Agent:** Fetching structure...
+> Done. Thermodynamic ground state saved to session state.
+> 
+> **User:** create a (001) slab with 4 layers.
+> 
+> **Agent:** Plan:
+> 1. Cleave the (001) surface from the current structure.
+> 2. Apply a 15 Å vacuum and fix the bottom 2 layers.
+> 3. Relax the slab using CHGNet.
+> 
+> Proceed?
+> 
+> **User:** yes
+> 
+> **Agent:** Running CHGNet relaxation...
+> Relaxation complete.
+> Surface termination: FeO2.
+> Surface Energy: 1.25 J/m².
 
 ---
 
 ## Core Physics & Standards
 
+*   **Workspace:** All outputs, including `md.log`, `md_internal.traj`, and the JSON session logs, are routed to the `./workspace/` directory.
 *   **Selective Dynamics:** Slabs are automatically generated with fixed bulk layers (bottom half) and relaxed surface layers (top half).
 *   **Coordinate Precision:** All VASP exports (`POSCAR`/`XDATCAR`) are handled via Pymatgen/ASE adaptors to maintain sub-Angstrom precision.
-*   **Descriptor Accuracy:** p-band centers are calculated as the first moment of the PDOS relative to the Fermi level ($E_f$).
-*   **Charge Updates:** During E-field MD, PACMAN charges are updated every 100 steps by default to maintain physical accuracy as geometry evolves.
-*   **Logging:** All outputs, including `md.log`, `md_internal.traj`, and the `agent_session.log`, are routed to the `./output/` directory.
+*   **Safety:** Simulation results must come only from tool outputs to avoid LLM hallucinations.
 
 ---
 

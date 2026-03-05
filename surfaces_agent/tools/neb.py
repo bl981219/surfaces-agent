@@ -6,14 +6,14 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from pymatgen.core import Structure
 from pymatgen.io.vasp import Poscar
-from surfaces_agent.agent.state import global_state as state
+from surfaces_agent.agent.session import global_state as state
 
 class NEBSetupSchema(BaseModel):
     initial_ref_id: str = Field(..., description="The state reference ID or file path of the initial state (IS) structure.")
     final_ref_id: str = Field(..., description="The state reference ID or file path of the final state (FS) structure.")
     n_images: int = Field(5, description="Number of intermediate images to generate (excluding IS and FS).")
 
-def setup_neb(initial_ref_id: str, final_ref_id: str, n_images: int = 5) -> str:
+def prepare_neb_pathway(initial_ref_id: str, final_ref_id: str, n_images: int = 5) -> str:
     """
     Transition State Prep Tool: Generates interpolated images between an initial and final structure for Nudged Elastic Band (NEB).
     
@@ -56,7 +56,7 @@ def setup_neb(initial_ref_id: str, final_ref_id: str, n_images: int = 5) -> str:
         except Exception as e:
             print(f"   [Tool] Warning: IDPP solver failed, falling back to linear. ({e})")
         
-        out_dir = Path("output/NEB_Path")
+        out_dir = Path("workspace/NEB_Path")
         out_dir.mkdir(parents=True, exist_ok=True)
         
         saved_paths = []
@@ -85,7 +85,7 @@ def main():
     parser.add_argument("--images", type=int, default=5, help="Number of intermediate images.")
     args = parser.parse_args()
     
-    print(setup_neb(args.initial, args.final, args.images))
+    print(prepare_neb_pathway(args.initial, args.final, args.images))
 
 if __name__ == "__main__":
     main()

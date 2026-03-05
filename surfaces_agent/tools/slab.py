@@ -9,7 +9,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 from pymatgen.core.surface import SlabGenerator
 from pymatgen.core import Structure
-from surfaces_agent.agent.state import global_state as state
+from surfaces_agent.agent.session import global_state as state
 
 @contextlib.contextmanager
 def suppress_output():
@@ -33,7 +33,7 @@ def get_surface_termination(slab) -> str:
     species = sorted(list(set(site.specie.symbol for site in top_layer)))
     return "-".join(species) + " terminated"
 
-def generate_and_relax_slab(
+def generate_surface_slab(
     bulk_ref_id: str, 
     miller: List[int], 
     min_slab_size: float = 10.0, 
@@ -150,7 +150,7 @@ def generate_and_relax_slab(
         # 5. Save State and Local File
         ref_id = state.save(relaxed_slab, prefix=f"slab_{formula}_{miller[0]}{miller[1]}{miller[2]}")
         
-        out_dir = Path("output")
+        out_dir = Path("workspace")
         out_dir.mkdir(exist_ok=True)
         filename = out_dir / f"{formula}_{miller[0]}{miller[1]}{miller[2]}_relaxed.vasp"
         
@@ -183,7 +183,7 @@ def main():
     args = parser.parse_args()
     
     try:
-        result = generate_and_relax_slab(
+        result = generate_surface_slab(
             args.bulk_file, 
             args.miller, 
             args.min_slab_size, 

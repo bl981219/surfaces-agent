@@ -104,7 +104,7 @@ def get_pdos_data(doscar_path: str, atom_indices: List[int]) -> Tuple[List[float
 
     return energy, summed_dos, e_fermi
 
-def extract_vasp_characteristics(
+def analyze_electronic_properties(
     calc_dir: str, 
     plot_pdos: bool = False, 
     zlow: Optional[float] = None, 
@@ -222,7 +222,7 @@ def main():
     
     args = parser.parse_args()
     
-    print(extract_vasp_characteristics(
+    print(analyze_electronic_properties(
         args.dir, 
         plot_pdos=args.plot, 
         zlow=args.zlow, 

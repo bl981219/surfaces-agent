@@ -5,13 +5,13 @@ import os
 from typing import List
 from pymatgen.core import Structure
 from pydantic import BaseModel, Field
-from surfaces_agent.agent.state import global_state as state
+from surfaces_agent.agent.session import global_state as state
 
 class SupercellSchema(BaseModel):
     input_ref_id: str = Field(..., description="The state reference ID or file path of the structure.")
     scaling_matrix: List[int] = Field(..., description="Scaling factors for a, b, c axes (e.g., [2, 2, 1]).")
 
-def make_supercell(input_ref_id: str, scaling_matrix: List[int]) -> str:
+def expand_structure_to_supercell(input_ref_id: str, scaling_matrix: List[int]) -> str:
     """
     Structure Expansion Tool: Creates a supercell by repeating the input unit cell along its lattice vectors.
     
@@ -40,14 +40,14 @@ def make_supercell(input_ref_id: str, scaling_matrix: List[int]) -> str:
     try:
         formula_before = struct.composition.reduced_formula
         # Apply supercell transformation
-        struct.make_supercell(scaling_matrix)
+        struct.expand_structure_to_supercell(scaling_matrix)
         formula_after = struct.composition.reduced_formula
         
         # Save to state
         ref_id = state.save(struct, prefix=f"supercell_{scaling_matrix[0]}x{scaling_matrix[1]}x{scaling_matrix[2]}")
         
         # Save to file
-        out_dir = "output"
+        out_dir = "workspace"
         os.makedirs(out_dir, exist_ok=True)
         filename = os.path.join(out_dir, f"POSCAR_{scaling_matrix[0]}x{scaling_matrix[1]}x{scaling_matrix[2]}.vasp")
         from pymatgen.io.vasp import Poscar
@@ -69,7 +69,7 @@ def main():
     parser.add_argument("--scaling", type=int, nargs=3, required=True, help="Scaling factors (e.g., 2 2 1).")
     args = parser.parse_args()
     
-    print(make_supercell(args.input, args.scaling))
+    print(expand_structure_to_supercell(args.input, args.scaling))
 
 if __name__ == "__main__":
     main()

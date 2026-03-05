@@ -1,7 +1,7 @@
 # surfaces_agent/agent/registry.py
 from typing import Callable, Dict, Any, Type, List, Optional
 from pydantic import BaseModel
-from surfaces_agent.agent.state import global_state, ExecutionState
+from surfaces_agent.agent.session import global_state, ExecutionState
 
 class ToolRegistry:
     def __init__(self, state: ExecutionState = global_state):

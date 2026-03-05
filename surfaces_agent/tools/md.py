@@ -17,7 +17,7 @@ from pymatgen.io.ase import AseAtomsAdaptor
 from pymatgen.analysis.adsorption import AdsorbateSiteFinder
 from pydantic import BaseModel, Field
 
-from surfaces_agent.agent.state import global_state as state
+from surfaces_agent.agent.session import global_state as state
 
 # Optional imports with graceful fallback
 try:
@@ -181,7 +181,7 @@ def apply_selective_dynamics(atoms, structure):
     constraints.extend(cart_constraints)
     if constraints: atoms.set_constraint(constraints)
 
-def run_chgnet_md(
+def run_md_simulation(
     input_file: str,
     temp_k: float = 873.15,
     n_steps: int = 1000,
@@ -193,12 +193,12 @@ def run_chgnet_md(
 ) -> str:
     """
     Molecular Dynamics Simulation Tool: Runs a CHGNet ML-MD simulation with external E-fields and gas/adsorbate insertion.
-    All outputs (logs, trajectories) are saved to the 'output/' directory.
+    All outputs (logs, trajectories) are saved to the 'workspace/' directory.
     """
     if not CHGNET_AVAILABLE:
         return "Error: CHGNet or PyTorch not installed."
 
-    output_dir = Path("output")
+    output_dir = Path("workspace")
     output_dir.mkdir(exist_ok=True)
     
     xdatcar_path = output_dir / "XDATCAR"
@@ -258,7 +258,7 @@ def run_chgnet_md(
         final_struct = AseAtomsAdaptor().get_structure(md.atoms)
         ref_id = state.save(final_struct, prefix="md_final")
         
-        # Write XDATCAR to output/
+        # Write XDATCAR to workspace/
         traj = read(str(traj_path), index=":")
         write(str(xdatcar_path), traj, format="vasp-xdatcar")
         
@@ -286,7 +286,7 @@ def main():
     args = parser.parse_args()
     
     mols = json.loads(args.molecules) if args.molecules else None
-    print(run_chgnet_md(args.input, args.temp, args.steps, e_field=args.field, molecules=mols, placement=args.placement, restart=args.restart))
+    print(run_md_simulation(args.input, args.temp, args.steps, e_field=args.field, molecules=mols, placement=args.placement, restart=args.restart))
 
 if __name__ == "__main__":
     main()
