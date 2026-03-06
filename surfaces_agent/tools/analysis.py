@@ -39,6 +39,8 @@ def get_atom_indices_by_selection(
 
 def calculate_band_center(energies: np.ndarray, densities: np.ndarray) -> float:
     """Calculates the center of gravity (first moment) of a distribution."""
+    if np.sum(densities) == 0:
+        return 0.0
     return np.sum(energies * densities) / np.sum(densities)
 
 def parse_bader_acf(calc_dir: str) -> Dict[int, float]:
@@ -69,33 +71,75 @@ def parse_bader_acf(calc_dir: str) -> Dict[int, float]:
         
     return charges
 
+def parse_pressure_from_outcar(outcar_path: str) -> Optional[float]:
+    """Manually parses the final external pressure from OUTCAR."""
+    pressure = None
+    try:
+        with open(outcar_path, 'r') as f:
+            for line in f:
+                if "external pressure" in line:
+                    # Line looks like: "  external pressure =      -14.81 kB  Pullay stress =        0.00 kB"
+                    parts = line.split()
+                    if len(parts) >= 4:
+                        pressure = float(parts[3])
+    except Exception:
+        pass
+    return pressure
+
 def get_pdos_data(doscar_path: str, atom_indices: List[int]) -> Tuple[List[float], Dict[str, List[float]], float]:
     """Extracts and sums PDOS data for a list of 1-based atom indices."""
     with open(doscar_path, "r") as f:
         rows = f.readlines()
 
-    n_lines = int(rows[5].split()[2])
-    e_fermi = float(rows[5].split()[3])
+    if len(rows) < 6:
+        raise ValueError("DOSCAR file too short or invalid.")
+
+    header_parts = rows[5].split()
+    if len(header_parts) < 4:
+        raise ValueError("DOSCAR header line invalid.")
+        
+    n_lines = int(header_parts[2])
+    e_fermi = float(header_parts[3])
     
     # Initialize containers
     energy = []
     summed_dos = {'s': None, 'p': None, 'd': None, 'f': None}
 
     for atom_num in atom_indices:
-        line_start = atom_num * (n_lines + 1) + 6
+        # Start line for specific atom index
+        # 1-based index: atom 1 starts at line 6 + (n_lines + 1)
+        line_start = atom_num * (n_lines + 1) + 5
         line_end = line_start + n_lines
         
+        if line_end > len(rows):
+            continue
+
         for i, a in enumerate(range(line_start, line_end)):
             cols = [float(x) for x in rows[a].split()]
             if len(energy) < n_lines:
                 energy.append(cols[0])
             
             # Orbital mapping based on column count (VASP standard)
+            # col 0: energy
+            # col 1, 2: s+, s-
+            # col 3, 4, 5, 6, 7, 8: p_y, p_z, p_x (+/- spins)
             # s: cols[1]+cols[2], p: cols[3:9], d: cols[9:19]...
             s_val = cols[1] + cols[2] if len(cols) >= 3 else cols[1]
-            p_val = sum(cols[3:9]) if len(cols) >= 9 else (sum(cols[3:5]) if len(cols) >= 5 else 0.0)
-            d_val = sum(cols[9:19]) if len(cols) >= 19 else (sum(cols[9:14]) if len(cols) >= 14 else 0.0)
-            f_val = sum(cols[19:33]) if len(cols) >= 33 else (sum(cols[19:26]) if len(cols) >= 26 else 0.0)
+            p_val = sum(cols[3:9]) if len(cols) >= 9 else (sum(cols[3:5]) if len(cols) >= 5 else (cols[3]+cols[4] if len(cols)>=5 else 0.0))
+            # d_val handling
+            if len(cols) >= 19:
+                d_val = sum(cols[9:19])
+            elif len(cols) >= 14:
+                d_val = sum(cols[9:14])
+            else:
+                d_val = 0.0
+            # f_val handling
+            if len(cols) >= 33:
+                f_val = sum(cols[19:33])
+            elif len(cols) >= 26:
+                f_val = sum(cols[19:26])
+            else:
+                f_val = 0.0
 
             for orb, val in zip(['s', 'p', 'd', 'f'], [s_val, p_val, d_val, f_val]):
                 if summed_dos[orb] is None:
@@ -140,7 +184,7 @@ def analyze_electronic_properties(
         if os.path.exists(outcar_path):
             out = Outcar(outcar_path)
             results['energy_eV'] = out.final_energy
-            results['stress_kB'] = out.pressure
+            results['stress_kB'] = parse_pressure_from_outcar(outcar_path)
         if os.path.exists(contcar_path):
             structure = Structure.from_file(contcar_path)
             results['formula'] = structure.composition.reduced_formula
@@ -197,6 +241,7 @@ def analyze_electronic_properties(
     report = f"--- Analysis Report: {results.get('formula', 'Unknown')} ({calc_dir}) ---\n"
     report += f"Selection: {len(target_atoms)} atoms ({species or 'Mixed'})\n"
     report += f"Total Energy:       {results.get('energy_eV', 'N/A')} eV\n"
+    report += f"Slab Stress:        {results.get('stress_kB', 'N/A')} kB\n"
     
     if 'pband_center' in results:
         report += f"p-band Center:      {results['pband_center']:.4f} eV (relative to Ef)\n"

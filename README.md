@@ -6,7 +6,7 @@ Autonomous AI Engine for Computational Surface Science, Catalysis, and Electroch
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
 *   **Computational Workspace & State:** The agent operates within a dedicated `workspace/` directory and maintains persistent scientific state across conversational turns. It intuitively understands concepts like "current structure" and "latest results".
 *   **Transparent Reasoning:** The agent explains its scientific reasoning, proposes step-by-step plans, and asks for confirmation before executing long calculations.
@@ -18,7 +18,7 @@ Autonomous AI Engine for Computational Surface Science, Catalysis, and Electroch
 
 ---
 
-## 🔑 API Key Setup Instructions
+## API Key Setup Instructions
 
 To use this agent, you need two API keys. Follow these steps to generate them:
 
@@ -37,7 +37,7 @@ To use this agent, you need two API keys. Follow these steps to generate them:
 
 ---
 
-## 🚀 Installation & Configuration
+## Installation & Configuration
 
 ### 1. Installation
 ```bash

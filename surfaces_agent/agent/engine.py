@@ -56,7 +56,7 @@ def main():
 
     client = genai.Client(api_key=api_key)
     print(f"🤖 surfaces-agent initialized with {model_id}. Type 'exit' to quit.")
-    print(f"📄 Session log: {session_log}")
+    print(f"Session log: {session_log}")
 
     agent_tools = [
         fetch_materials_project_structure,
