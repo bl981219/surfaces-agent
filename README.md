@@ -1,5 +1,9 @@
 # surfaces-agent
 
+<p align="center">
+  <img src="docs/assets/surfaces_agent.png" width="800" title="Surfaces Agent Scheme">
+</p>
+
 Autonomous AI Engine for Computational Surface Science, Catalysis, and Electrochemistry.
 
 `surfaces-agent` transforms high-level natural language queries into deterministic Python execution workflows. Designed for researchers working on **Methane Activation**, **Perovskite Oxides**, and **Surface Reactivity**, this tool-first orchestrator eliminates hallucinations by delegating physical calculations to specialized modules powered by **Pymatgen**, **ASE**, and **CHGNet**.
